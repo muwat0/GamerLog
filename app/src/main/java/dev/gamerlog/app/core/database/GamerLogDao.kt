@@ -13,6 +13,12 @@ data class GamePlaytime(
     val totalDurationMs: Long
 )
 
+data class ActivitySessionInterval(
+    val startInclusiveMs: Long,
+    val endExclusiveMs: Long
+)
+
+
 @Dao
 interface GamerLogDao {
 
@@ -40,6 +46,20 @@ interface GamerLogDao {
         startInclusiveMs: Long,
         endExclusiveMs: Long
     ): Flow<List<GamePlaytime>>
+
+    @Query(
+        """
+        SELECT MAX(play_sessions.startTime, :startInclusiveMs) AS startInclusiveMs,
+               MIN(play_sessions.endTime, :endExclusiveMs) AS endExclusiveMs
+        FROM play_sessions
+        WHERE play_sessions.startTime < :endExclusiveMs
+          AND play_sessions.endTime > :startInclusiveMs
+        """
+    )
+    fun observeActivitySessionIntervals(
+        startInclusiveMs: Long,
+        endExclusiveMs: Long
+    ): Flow<List<ActivitySessionInterval>>
 
     @Query("SELECT * FROM games ORDER BY appName ASC")
     fun observeGames(): Flow<List<GameEntity>>

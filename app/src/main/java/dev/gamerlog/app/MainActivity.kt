@@ -66,6 +66,7 @@ import dev.gamerlog.app.core.database.GameEntity
 import dev.gamerlog.app.core.database.GamerLogDatabase
 import dev.gamerlog.app.core.tracker.UsageScanWorker
 import dev.gamerlog.app.core.tracker.UsageScanner
+import dev.gamerlog.app.ui.activity.ActivityContent
 import dev.gamerlog.app.ui.games.GamesScreen
 import dev.gamerlog.app.ui.theme.GamerLogTheme
 
@@ -285,11 +286,13 @@ private fun GamerLogScreen(
                 )
                 else -> ActivityScreen(
                     hasUsageAccess = hasUsageAccess,
-                    onOpenUsageSettings = onOpenUsageSettings
+                    onOpenUsageSettings = onOpenUsageSettings,
+                    database = database,
+                    currentDayWindow = currentDayWindow
                 )
-            }
         }
     }
+}
 }
 
 @Composable
@@ -357,12 +360,27 @@ private fun SummaryScreen(
             )
         }
         else -> {
-            EmptyStateCard(
-                title = "Month summary is not yet available",
-                description = "Game session recording is active locally. Monthly playtime statistics and aggregations will arrive in Phase 2."
+            val monthWindow = remember(currentDayWindow.date, currentDayWindow.zoneId) {
+                MonthWindow.forDate(currentDayWindow.date, currentDayWindow.zoneId)
+            }
+            val monthPlaytime = key(monthWindow) {
+                val monthPlaytimeFlow = remember(monthWindow, database) {
+                    database.dao().observeGamePlaytime(
+                        startInclusiveMs = monthWindow.startInclusiveMs,
+                        endExclusiveMs = monthWindow.endExclusiveMs
+                    )
+                }
+                val state by monthPlaytimeFlow.collectAsState(initial = null)
+                state
+            }
+            PeriodSummaryContent(
+                playtime = monthPlaytime,
+                hasUsageAccess = hasUsageAccess,
+                cardTitle = "This Month's Playtime",
+                periodName = "this month"
             )
         }
-    }
+}
 }
 
 @Composable
@@ -468,16 +486,19 @@ private fun PeriodSummaryContent(
 @Composable
 private fun ActivityScreen(
     hasUsageAccess: Boolean,
-    onOpenUsageSettings: () -> Unit
+    onOpenUsageSettings: () -> Unit,
+    database: GamerLogDatabase,
+    currentDayWindow: DayWindow
 ) {
     UsageAccessCard(
         hasUsageAccess = hasUsageAccess,
         onOpenUsageSettings = onOpenUsageSettings
     )
     Spacer(modifier = Modifier.height(24.dp))
-    EmptyStateCard(
-        title = "24 × 7 activity view is not yet available",
-        description = "Game sessions are recorded in local storage in the background. The 7-day, 24-hour activity heatmap and peak gaming hour analysis will arrive in Phase 2."
+    ActivityContent(
+        database = database,
+        date = currentDayWindow.date,
+        zoneId = currentDayWindow.zoneId
     )
 }
 
