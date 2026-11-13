@@ -82,14 +82,12 @@ class WeekSummaryUiTest {
             startTime = weekSessionStart,
             endTime = weekSessionStart + durationMs,
             durationMs = durationMs,
-            syncStatus = 0
         )
         val todaySession = PlaySessionEntity(
             packageName = packageName,
             startTime = todaySessionStart,
             endTime = todaySessionStart + durationMs,
             durationMs = durationMs,
-            syncStatus = 0
         )
 
         val context = ApplicationProvider.getApplicationContext<Context>()

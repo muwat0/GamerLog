@@ -76,14 +76,12 @@ class MonthSummaryUiTest {
             startTime = insideMonthStart,
             endTime = insideMonthStart + insideMonthDurationMs,
             durationMs = insideMonthDurationMs,
-            syncStatus = 0
         )
         val outsideMonthSession = PlaySessionEntity(
             packageName = packageName,
             startTime = outsideMonthStart,
             endTime = outsideMonthStart + outsideMonthDurationMs,
             durationMs = outsideMonthDurationMs,
-            syncStatus = 0
         )
 
         val context = ApplicationProvider.getApplicationContext<Context>()

@@ -75,7 +75,6 @@ class DailySummaryUiTest {
             startTime = sessionStart,
             endTime = sessionEnd,
             durationMs = durationMs,
-            syncStatus = 0
         )
 
         val context = ApplicationProvider.getApplicationContext<Context>()
