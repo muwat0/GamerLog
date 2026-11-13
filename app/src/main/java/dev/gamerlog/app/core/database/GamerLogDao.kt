@@ -6,8 +6,40 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 
+data class GamePlaytime(
+    val packageName: String,
+    val appName: String,
+    val customTitle: String?,
+    val totalDurationMs: Long
+)
+
 @Dao
 interface GamerLogDao {
+
+    @Query(
+        """
+        SELECT play_sessions.packageName AS packageName,
+               games.appName AS appName,
+               games.customTitle AS customTitle,
+               SUM(
+                   MIN(play_sessions.endTime, :endExclusiveMs) -
+                   MAX(play_sessions.startTime, :startInclusiveMs)
+               ) AS totalDurationMs
+        FROM play_sessions
+        INNER JOIN games ON games.packageName = play_sessions.packageName
+        WHERE play_sessions.startTime < :endExclusiveMs
+          AND play_sessions.endTime > :startInclusiveMs
+        GROUP BY play_sessions.packageName, games.appName, games.customTitle
+        ORDER BY totalDurationMs DESC,
+                 play_sessions.packageName ASC,
+                 games.appName ASC,
+                 games.customTitle ASC
+        """
+    )
+    fun observeGamePlaytime(
+        startInclusiveMs: Long,
+        endExclusiveMs: Long
+    ): Flow<List<GamePlaytime>>
 
     @Query("SELECT * FROM games ORDER BY appName ASC")
     fun observeGames(): Flow<List<GameEntity>>

@@ -38,7 +38,7 @@ fun GamesScreen(
     games: List<GameEntity>,
     onToggleTracked: (packageName: String, isTracked: Boolean) -> Unit
 ) {
-    // 0: Tümü, 1: İzlenenler, 2: İzlenmeyenler
+    // 0: All, 1: Tracked, 2: Untracked
     var filterIndex by rememberSaveable { mutableIntStateOf(0) }
 
     val filteredGames = remember(games, filterIndex) {
@@ -64,18 +64,18 @@ fun GamesScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "Oyun ve Uygulama Kataloğu",
+                    text = "Games & Applications",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "Cihazınızdaki başlatılabilir uygulamalar listelenir. Oyun kategorisindeki uygulamalar varsayılan olarak otomatik izlenir. İstediğiniz uygulamanın izleme durumunu açıp kapatabilirsiniz.",
+                    text = "Launchable applications on your device are listed here. Apps categorized as games are tracked automatically by default. You can toggle tracking for any app.",
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "Toplam: ${games.size} uygulama | İzlenen: $trackedCount",
+                    text = "Total: ${games.size} apps | Tracked: $trackedCount",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.primary
@@ -94,17 +94,17 @@ fun GamesScreen(
             FilterChip(
                 selected = filterIndex == 0,
                 onClick = { filterIndex = 0 },
-                label = { Text("Tümü (${games.size})") }
+                label = { Text("All (${games.size})") }
             )
             FilterChip(
                 selected = filterIndex == 1,
                 onClick = { filterIndex = 1 },
-                label = { Text("İzlenenler ($trackedCount)") }
+                label = { Text("Tracked ($trackedCount)") }
             )
             FilterChip(
                 selected = filterIndex == 2,
                 onClick = { filterIndex = 2 },
-                label = { Text("İzlenmeyenler (${games.size - trackedCount})") }
+                label = { Text("Untracked (${games.size - trackedCount})") }
             )
         }
 
@@ -122,12 +122,12 @@ fun GamesScreen(
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        text = "Uygulama bulunamadı",
+                        text = "No apps found",
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Seçilen filtreye uygun herhangi bir uygulama bulunmuyor.",
+                        text = "No applications match the selected filter.",
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -201,7 +201,7 @@ private fun GameItemRow(
                             )
                         ) {
                             Text(
-                                text = "Oyun",
+                                text = "Game",
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.SemiBold,
