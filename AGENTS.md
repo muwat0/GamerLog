@@ -4,11 +4,11 @@
 
 GamerLog is an Android application with one Gradle module, `:app`. The implemented first phase includes a Compose Material 3 interface, a launchable-app game catalog with tracking toggles, local Room storage, and usage-event session tracking. See `README.md` and the current in-repository code for the implemented behavior; do not rely on external specifications or assume roadmap items already exist.
 
-The current phase is local game discovery and session tracking. Dashboard summaries, heatmap/statistics, Backloggd integration, and device/Doze/battery hardening remain future work. Keep changes within the existing module structure unless a concrete requirement justifies a change.
+Dashboard statistics include daily/weekly/monthly summaries and a 24×7 activity heatmap with peak-time analysis. Optional Backloggd export uses the same local source of truth; see `README.md` for setup, verification evidence, and remaining limitations. Device/Doze/battery hardening remains future work. Keep changes within the existing module structure unless a concrete requirement justifies a change.
 
 ## Product boundaries
 
-GamerLog is local-first: local records are the source of truth, and Backloggd is an optional future one-way export rather than a replacement for local sessions. Do not add social/server features, a live in-game HUD, or importing playtime from external platforms without an explicit product decision. Do not add telemetry or analytics that expose game history or credentials.
+GamerLog is local-first: local records are the source of truth, and Backloggd is an optional one-way export rather than a replacement for local sessions. Do not add social/server features, a live in-game HUD, or importing playtime from external platforms without an explicit product decision. Do not add telemetry or analytics that expose game history or credentials.
 
 Tracking uses Android usage access and `UsageEvents`; do not assume data is available unless the user grants that access. Do not add a continuously running `ForegroundService`, persistent tracking service, `WakeLock`, or accessibility service as the tracking solution. The current implementation scans on app resume and periodically through WorkManager. Do not describe the zero-battery-drain goal as a measured guarantee.
 
@@ -25,12 +25,14 @@ Use the existing Jetpack Compose Material 3 patterns and support system light/da
 
 ## Synchronization invariants
 
-Backloggd synchronization is not implemented. If implementing it after an explicit product decision, keep it a one-way export from local sessions. Use a durable outbox with explicit persistent states for waiting, successfully sent, excluded, and failed records; offline or failed sends must not lose local records, retries must not log a session twice, and success is recorded only after acknowledgement. Schedule sends only when connectivity is available. Store credentials locally and securely; never write them to logs or analytics. Keep network integration out of tracking and statistics code.
+Backloggd export is opt-in, with explicit game mappings and separate consent for recorded history. Keep it one-way from local sessions. The durable outbox is the sole delivery-state authority; do not restore the obsolete `play_sessions.syncStatus` field. Preserve waiting, sending, sent, excluded, failed, and uncertain records across account changes and interruptions. An interrupted POST may already have committed: reconcile the unique marker read-only, and never resend an uncertain item merely because the marker is absent. Record success only after acknowledgement/read-back. Schedule ordinary, connectivity-constrained WorkManager jobs; keep transport out of tracking and statistics. Store cookies with Android Keystore encryption in `noBackupFilesDir`; never log them or place them in Room/WorkManager data. Session notes may be public, and local exact durations must not be replaced by rounded remote minutes. See `CONTEXT.md` for state definitions.
+
+Local outbox items are contributions, not separate remote calendar entries. Merge same-day contributions into the existing remote entry and retain every UUID/day/exact-duration ledger item. Truncate only after summing local milliseconds per day; preserve unmanaged remote time and existing note/privacy/tag/range/review data. Read-back must confirm prior contributors remain, not merely the latest marker. Shared remote IDs across multiple sent local rows are expected. The user selected the existing most-recent playthrough, not an automatically added dedicated playthrough.
 
 ## Roadmap and completion
 
-1. **Current phase — discovery and tracking:** game discovery, user tracking toggles, usage-access flow, local sessions/checkpoints, and duplicate protection.
-2. **Dashboard and statistics:** daily/weekly/monthly summaries, a 24×7 activity heatmap, and peak-time analysis.
+1. **Discovery and tracking:** game discovery, user tracking toggles, usage-access flow, local sessions/checkpoints, and duplicate protection.
+2. **Dashboard and statistics:** daily/weekly/monthly summaries, a 24×7 activity heatmap over the last 28 device-local calendar days including today, and peak-time analysis. Aggregate actual recorded duration and preserve correct local-calendar boundaries across time-zone and DST changes.
 3. **Backloggd integration:** session/cookie and CSRF-aware logging with a durable outbox and connectivity-aware scheduling.
 4. **Device validation and hardening:** measure Doze behavior, battery use, and background operation on target devices.
 
@@ -38,4 +40,4 @@ Do not mark a phase complete until its behavior is implemented and evidenced. Ke
 
 ## Verification
 
-Inspect the repository and relevant call sites before changing behavior. Use the available Gradle wrapper and module tasks for code changes, selecting the narrowest test or smoke scenario that exercises the change. Tracking coverage should include the 15-second boundary, missing events, midnight splitting, and replay/idempotency. Future synchronization coverage should include state transitions and offline/connectivity-return behavior. Connected Android instrumentation tests may uninstall the app and erase its sandbox: use an isolated emulator or back up app data first. Report device, Doze, or battery claims only when measured on a real device; a unit test is not device evidence.
+Inspect the repository and relevant call sites before changing behavior. Use the available Gradle wrapper and module tasks for code changes, selecting the narrowest test or smoke scenario that exercises the change. Tracking coverage should include the 15-second boundary, missing events, midnight splitting, and replay/idempotency. Synchronization coverage should include migrations, state transitions, offline/connectivity-return behavior, lost acknowledgement, account isolation, and concurrent-worker duplicate protection. Connected Android instrumentation tests may uninstall the app and erase its sandbox: use an isolated emulator or back up app data first. Keep live account-write evidence separate from isolated transport/state-machine tests; obtain explicit approval before publishing test journal entries. Report device, Doze, or battery claims only when measured on a real device; a unit test is not device evidence.

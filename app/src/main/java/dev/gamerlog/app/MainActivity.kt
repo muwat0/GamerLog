@@ -56,6 +56,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -66,7 +67,10 @@ import dev.gamerlog.app.core.database.GameEntity
 import dev.gamerlog.app.core.database.GamerLogDatabase
 import dev.gamerlog.app.core.tracker.UsageScanWorker
 import dev.gamerlog.app.core.tracker.UsageScanner
+import dev.gamerlog.app.ui.activity.ActivityContent
 import dev.gamerlog.app.ui.games.GamesScreen
+import dev.gamerlog.app.core.backloggd.BackloggdRepository
+import dev.gamerlog.app.ui.backloggd.BackloggdScreen
 import dev.gamerlog.app.ui.theme.GamerLogTheme
 
 class MainActivity : ComponentActivity() {
@@ -170,6 +174,17 @@ class MainActivity : ComponentActivity() {
         resumeRevision++
         refreshUsageAccess()
         triggerBackgroundScanAndDiscovery()
+        lifecycleScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    BackloggdRepository(applicationContext, database).restoreScheduling()
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                Log.w(TAG, "Backloggd scheduling unavailable")
+            }
+        }
     }
     private fun refreshUsageAccess() {
         val appOpsManager = getSystemService(AppOpsManager::class.java)
@@ -215,7 +230,7 @@ private fun GamerLogScreen(
 ) {
     var selectedDestination by rememberSaveable { mutableIntStateOf(0) }
     var selectedRange by rememberSaveable { mutableIntStateOf(0) }
-    val destinations = listOf("Summary", "Games", "Activity")
+    val destinations = listOf("Summary", "Games", "Activity", "Backloggd")
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
@@ -239,6 +254,12 @@ private fun GamerLogScreen(
                     icon = { Text("▦") },
                     label = { Text("Activity") }
                 )
+                NavigationBarItem(
+                    selected = selectedDestination == 3,
+                    onClick = { selectedDestination = 3 },
+                    icon = { Text("↗") },
+                    label = { Text("Backloggd") }
+                )
             }
         }
     ) { contentPadding ->
@@ -247,7 +268,7 @@ private fun GamerLogScreen(
                 .fillMaxSize()
                 .padding(contentPadding)
                 .then(
-                    if (selectedDestination == 1) {
+                    if (selectedDestination == 1 || selectedDestination == 3) {
                         Modifier.padding(horizontal = 24.dp, vertical = 24.dp)
                     } else {
                         Modifier
@@ -283,13 +304,16 @@ private fun GamerLogScreen(
                     games = games,
                     onToggleTracked = onToggleTracked
                 )
-                else -> ActivityScreen(
+                2 -> ActivityScreen(
                     hasUsageAccess = hasUsageAccess,
-                    onOpenUsageSettings = onOpenUsageSettings
+                    onOpenUsageSettings = onOpenUsageSettings,
+                    database = database,
+                    currentDayWindow = currentDayWindow
                 )
-            }
+                3 -> BackloggdScreen(database)
         }
     }
+}
 }
 
 @Composable
@@ -357,12 +381,27 @@ private fun SummaryScreen(
             )
         }
         else -> {
-            EmptyStateCard(
-                title = "Month summary is not yet available",
-                description = "Game session recording is active locally. Monthly playtime statistics and aggregations will arrive in Phase 2."
+            val monthWindow = remember(currentDayWindow.date, currentDayWindow.zoneId) {
+                MonthWindow.forDate(currentDayWindow.date, currentDayWindow.zoneId)
+            }
+            val monthPlaytime = key(monthWindow) {
+                val monthPlaytimeFlow = remember(monthWindow, database) {
+                    database.dao().observeGamePlaytime(
+                        startInclusiveMs = monthWindow.startInclusiveMs,
+                        endExclusiveMs = monthWindow.endExclusiveMs
+                    )
+                }
+                val state by monthPlaytimeFlow.collectAsState(initial = null)
+                state
+            }
+            PeriodSummaryContent(
+                playtime = monthPlaytime,
+                hasUsageAccess = hasUsageAccess,
+                cardTitle = "This Month's Playtime",
+                periodName = "this month"
             )
         }
-    }
+}
 }
 
 @Composable
@@ -468,16 +507,19 @@ private fun PeriodSummaryContent(
 @Composable
 private fun ActivityScreen(
     hasUsageAccess: Boolean,
-    onOpenUsageSettings: () -> Unit
+    onOpenUsageSettings: () -> Unit,
+    database: GamerLogDatabase,
+    currentDayWindow: DayWindow
 ) {
     UsageAccessCard(
         hasUsageAccess = hasUsageAccess,
         onOpenUsageSettings = onOpenUsageSettings
     )
     Spacer(modifier = Modifier.height(24.dp))
-    EmptyStateCard(
-        title = "24 × 7 activity view is not yet available",
-        description = "Game sessions are recorded in local storage in the background. The 7-day, 24-hour activity heatmap and peak gaming hour analysis will arrive in Phase 2."
+    ActivityContent(
+        database = database,
+        date = currentDayWindow.date,
+        zoneId = currentDayWindow.zoneId
     )
 }
 

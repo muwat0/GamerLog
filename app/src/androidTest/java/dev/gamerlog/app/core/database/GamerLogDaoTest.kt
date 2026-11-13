@@ -95,7 +95,6 @@ class GamerLogDaoTest {
             startTime = 1000L,
             endTime = 2000L,
             durationMs = 1000L,
-            syncStatus = 0
         )
 
         // Initial insert should succeed
@@ -118,7 +117,6 @@ class GamerLogDaoTest {
             startTime = 3000L,
             endTime = 4000L,
             durationMs = 1000L,
-            syncStatus = 0
         )
         val batchInsert = gamerLogDao.insertSessions(listOf(session, newSession))
         assertEquals(2, batchInsert.size)
@@ -155,7 +153,6 @@ class GamerLogDaoTest {
             startTime = 1000L,
             endTime = 5000L,
             durationMs = 4000L,
-            syncStatus = 0
         )
         val initialSessionIds = gamerLogDao.insertSessions(listOf(initialPlaySession))
         assertEquals(1, initialSessionIds.size)
@@ -182,7 +179,6 @@ class GamerLogDaoTest {
                             startTime = 6000L,
                             endTime = 7000L,
                             durationMs = 1000L,
-                            syncStatus = 0
                         )
                     )
                 )
@@ -275,14 +271,12 @@ class GamerLogDaoTest {
                 startTime = 1000L,
                 endTime = 2000L,
                 durationMs = 1000L,
-                syncStatus = 0
             ),
             PlaySessionEntity(
                 packageName = "com.supercell.clashroyale",
                 startTime = 3000L,
                 endTime = 4000L,
                 durationMs = 1000L,
-                syncStatus = 0
             )
         )
         val insertedIds = gamerLogDao.insertSessions(sessions)

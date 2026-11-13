@@ -58,9 +58,13 @@ dependencies {
     ksp(libs.androidx.room.compiler)
 
     implementation(libs.androidx.work.runtime.ktx)
+    implementation("org.jsoup:jsoup:1.18.3")
+
+    testImplementation("org.json:json:20240303")
 
     testImplementation(libs.junit)
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.work:work-testing:2.10.0")
     androidTestImplementation("androidx.test:core:1.6.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
     androidTestImplementation(platform(libs.androidx.compose.bom))

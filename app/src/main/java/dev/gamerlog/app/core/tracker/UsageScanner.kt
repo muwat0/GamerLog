@@ -116,7 +116,6 @@ class UsageScanner(
                     startTime = slice.startTime,
                     endTime = slice.endTime,
                     durationMs = slice.durationMs,
-                    syncStatus = 0
                 )
             }
 

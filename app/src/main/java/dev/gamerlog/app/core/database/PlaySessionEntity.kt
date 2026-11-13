@@ -18,7 +18,6 @@ import androidx.room.PrimaryKey
     indices = [
         Index("packageName"),
         Index("startTime"),
-        Index("syncStatus"),
         Index(value = ["packageName", "startTime", "endTime"], unique = true)
     ]
 )
@@ -28,6 +27,5 @@ data class PlaySessionEntity(
     val packageName: String,
     val startTime: Long,
     val endTime: Long,
-    val durationMs: Long,
-    val syncStatus: Int = 0
+    val durationMs: Long
 )
