@@ -9,7 +9,7 @@
 > data resets, and breaking changes between commits. Do not install it on a
 > device you rely on, and back up anything you care about before trying it.
 
-GamerLog is a local-first Android game playtime tracker. Phase one implements game discovery and local session tracking. Phase two is in progress: the daily and device-local weekly Summary slices are implemented; monthly summary, broader statistics, and optional Backloggd integration remain future work.
+GamerLog is a local-first Android game playtime tracker. Phase one implements game discovery and local session tracking. Phase two adds daily, weekly, and monthly summaries, a 24×7 activity heatmap, and peak-time analysis. Optional Backloggd export is a separate, unimplemented phase.
 
 ## Implemented
 
@@ -17,6 +17,8 @@ GamerLog is a local-first Android game playtime tracker. Phase one implements ga
 - Compose UI with Material 3 light and dark themes, plus Android dynamic color where available.
 - Daily Summary displaying the local day's total playtime and per-game breakdown with English labels.
 - Weekly Summary displaying the current device-local calendar week's total playtime (ISO Monday 00:00 through next Monday 00:00 exclusive) and per-game breakdown with English labels.
+- Monthly Summary displaying the current device-local calendar month's total playtime and per-game breakdown.
+- Activity statistics for the last 28 device-local calendar days, including today: a Monday–Sunday × 24-hour playtime heatmap and peak-hour/weekday analysis.
 - A Settings card for opening Android's usage-access settings.
 - A Games catalog of launchable apps. Apps are categorized as games automatically, and users can toggle which apps are tracked.
 - Local Room storage for `games`, `play_sessions`, `scan_checkpoints`, and `open_sessions`.
@@ -25,7 +27,9 @@ GamerLog is a local-first Android game playtime tracker. Phase one implements ga
 
 ## Current limits and verification
 
-The daily Summary displays the local day's total playtime and per-game totals with English labels. The weekly Summary displays the current device-local calendar week's playtime (ISO Monday 00:00 through next Monday 00:00 exclusive) and per-game breakdown, aggregated and clipped via Room across the interval. Monthly summary, the 24×7 activity heatmap, and peak-time analysis remain placeholders; the scan model is unchanged.
+Summary aggregates completed local sessions across the selected day, calendar week, or calendar month, clipping sessions to that interval. Activity groups recorded duration by device-local weekday and hour over the last 28 calendar days, including today; the grid scrolls horizontally on narrow screens. Daylight-saving gaps and repeated hours use actual elapsed duration. These views remain available for recorded history even if usage access is later revoked. Open sessions appear only after tracking finalizes them; the scan model is unchanged.
+
+Heatmap intensity is relative to the busiest weekday/hour cell in the selected 28-day window. Peak hours aggregate the same hour across all weekdays; busiest weekdays aggregate all 24 hours. All positive-duration ties are shown. No peak is reported when there is no recorded playtime.
 
 Earlier Phase 1 device validation remains as recorded: on Android 16, the catalog, tracking toggles, usage-access flow, checkpoints, and repeated scans were exercised. An isolated in-memory Room test captured a real 17.317-second `ACTIVITY_RESUMED` → `ACTIVITY_PAUSED` session and persisted exactly one row; a repeat scan inserted none.
 
@@ -36,6 +40,10 @@ Before Usage Access was granted, MainActivity showed the Summary empty state and
 For the daily Summary slice, `:app:assembleDebug`, `:app:testDebugUnitTest` (18 tests), and `:app:compileDebugAndroidTestKotlin` succeeded. An independent in-memory SQLite smoke check verified overlap clipping, day boundaries, ordering, and duplicate-ignore behavior. Instrumentation has now been run on the phone as described above; no new battery or Doze evidence was collected.
 
 For the weekly slice, three JVM calendar-window tests passed, including both daylight-saving transitions. `:app:assembleDebug` and `:app:assembleDebugAndroidTest` succeeded; the targeted `WeekSummaryUiTest` passed on the Android 16 phone after scrolling its fixture into view. A live Week-chip interaction displayed two games with a nonzero weekly total, confirming that preexisting on-device data is aggregated and rendered; game titles and durations are omitted. Before installation, the app sandbox was backed up; after the test, all preexisting games and sessions remained and the fixture was removed. No connected Gradle test task, app clear, or uninstall was used.
+
+Phase two was completed and checked on an isolated Android 16/API 36 KVM emulator. The VM ran `:app:testDebugUnitTest` (32 tests, zero failures), `:app:assembleDebug`, and `:app:assembleDebugAndroidTest`. The initial connected run passed the other 11 DAO/day/week/month cases but exposed an Activity heatmap test-harness content-ownership error. After correcting that test setup, the targeted `ActivityHeatmapUiTest` passed, including reactive Room updates, exact cell duration, peak insights, and horizontal scrolling. Calendar coverage includes leap February, year rollover, DST gaps/repeated hours, interval clipping, and fractional-offset local hours.
+
+A separate populated-screen smoke scenario installed and launched the debug APK through ADB. A synthetic 90-minute session displayed as `1h 30m` in Month and Activity, with an `18:00` peak hour and correctly shaded 18:00/19:00 cells after horizontal scrolling. Light-theme screenshots showed the populated monthly breakdown and heatmap; a dark-theme screenshot showed the populated Activity totals and peak insights. The scenario restored the emulator database and removed its fixture. These are emulator/fixture observations, not physical-device, battery, or Doze measurements.
 
 Doze behavior and battery use have not been measured; no zero-drain guarantee is made. Backloggd integration remains unimplemented.
 
@@ -61,7 +69,7 @@ The unit-test task runs JVM tests; the connected Android test task requires a de
 
 Phase-one session capture and duplicate protection have been observed on a device; Doze and battery behavior remain unmeasured. Remaining roadmap stages:
 
-1. **Dashboard and statistics:** daily and weekly (device-local Monday through next Monday) summaries are implemented. Monthly summary, the 24×7 activity heatmap, and peak-time analysis remain future work.
+1. **Dashboard and statistics:** daily, weekly, and monthly summaries, the 24×7 activity heatmap, and peak-time analysis. Verification is recorded above.
 2. **Backloggd integration:** session/cookie and CSRF-aware logging with a durable outbox and WorkManager scheduling.
 3. **Device validation and hardening:** measure Doze behavior, battery use, and background operation on target Android devices.
 

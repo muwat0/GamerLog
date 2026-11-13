@@ -4,7 +4,7 @@
 
 GamerLog is an Android application with one Gradle module, `:app`. The implemented first phase includes a Compose Material 3 interface, a launchable-app game catalog with tracking toggles, local Room storage, and usage-event session tracking. See `README.md` and the current in-repository code for the implemented behavior; do not rely on external specifications or assume roadmap items already exist.
 
-The current phase is local game discovery and session tracking. Dashboard summaries, heatmap/statistics, Backloggd integration, and device/Doze/battery hardening remain future work. Keep changes within the existing module structure unless a concrete requirement justifies a change.
+Dashboard statistics include daily/weekly/monthly summaries and a 24×7 activity heatmap with peak-time analysis. See `README.md` for verification evidence and remaining limitations. Backloggd integration and device/Doze/battery hardening remain future work. Keep changes within the existing module structure unless a concrete requirement justifies a change.
 
 ## Product boundaries
 
@@ -29,8 +29,8 @@ Backloggd synchronization is not implemented. If implementing it after an explic
 
 ## Roadmap and completion
 
-1. **Current phase — discovery and tracking:** game discovery, user tracking toggles, usage-access flow, local sessions/checkpoints, and duplicate protection.
-2. **Dashboard and statistics:** daily/weekly/monthly summaries, a 24×7 activity heatmap, and peak-time analysis.
+1. **Discovery and tracking:** game discovery, user tracking toggles, usage-access flow, local sessions/checkpoints, and duplicate protection.
+2. **Dashboard and statistics:** daily/weekly/monthly summaries, a 24×7 activity heatmap over the last 28 device-local calendar days including today, and peak-time analysis. Aggregate actual recorded duration and preserve correct local-calendar boundaries across time-zone and DST changes.
 3. **Backloggd integration:** session/cookie and CSRF-aware logging with a durable outbox and connectivity-aware scheduling.
 4. **Device validation and hardening:** measure Doze behavior, battery use, and background operation on target devices.
 
